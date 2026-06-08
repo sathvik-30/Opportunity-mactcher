@@ -1,0 +1,41 @@
+[
+  {
+    "id": "1",
+    "title": "Smart India Hackathon 2025",
+    "organization": "Government of India",
+    "type": "hackathon",
+    "description": "Build solutions for real government problems using Python, ML, and web technologies.",
+    "required_skills": ["Python", "ML", "React"],
+    "eligibility": {"min_year": 1, "branches": ["CS", "IT", "ECE"]},
+    "deadline": "2025-07-20",
+    "location": "Pan India",
+    "stipend": null,
+    "link": "https://sih.gov.in"
+  },
+  {
+    "id": "2",
+    "title": "ML Engineer Intern",
+    "organization": "Swiggy",
+    "type": "internship",
+    "description": "Work on recommendation systems and demand forecasting using Python and ML.",
+    "required_skills": ["Python", "scikit-learn", "SQL"],
+    "eligibility": {"min_year": 2, "branches": ["CS", "IT"]},
+    "deadline": "2025-07-01",
+    "location": "Bangalore",
+    "stipend": "₹40,000/month",
+    "link": "https://careers.swiggy.com"
+  },
+  {
+    "id": "3",
+    "title": "Tata Trust STEM Scholarship",
+    "organization": "Tata Trust",
+    "type": "scholarship",
+    "description": "Merit based scholarship for STEM students with strong academic record.",
+    "required_skills": [],
+    "eligibility": {"min_year": 2, "min_cgpa": 8.0, "branches": ["CS", "IT", "ME", "ECE"]},
+    "deadline": "2025-08-05",
+    "location": null,
+    "stipend": "₹1,50,000",
+    "link": "https://tatatrusts.org"
+  }
+]
