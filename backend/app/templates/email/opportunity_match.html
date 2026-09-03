@@ -1,0 +1,126 @@
+<!--
+  backend/app/templates/email/opportunity_match.html — Phase 7
+  Table-based layout, inline CSS only — designed to render correctly
+  in Gmail, Outlook, and mobile clients, none of which reliably
+  support modern CSS (flexbox/grid) or <style> blocks in all contexts.
+
+  Tokens (replaced by app/services/email_templates.py, all pre-escaped
+  before substitution — never raw user/scraper data):
+    {{STUDENT_NAME}} {{ORGANIZATION}} {{OPPORTUNITY_TITLE}}
+    {{OPPORTUNITY_TYPE}} {{MATCH_SCORE}} {{MATCHED_SKILLS_HTML}}
+    {{MISSING_SKILLS_HTML}} {{DESCRIPTION}}
+    {{STIPEND_ROW}} {{LOCATION_ROW}} {{DEADLINE_ROW}}
+    {{APPLY_BUTTON}} {{VIEW_BUTTON}}
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity Matcher</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0A66C2,#6D28D9);background-color:#0A66C2;padding:20px 28px;">
+              <span style="font-size:18px;font-weight:bold;color:#ffffff;">Opportunity Matcher</span>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:28px 28px 8px 28px;">
+              <p style="margin:0;font-size:15px;color:#111827;">Hi {{STUDENT_NAME}},</p>
+              <p style="margin:8px 0 0 0;font-size:14px;color:#4b5563;line-height:1.5;">
+                We found a new opportunity that matches your profile.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Match score badge -->
+          <tr>
+            <td style="padding:16px 28px 0 28px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#dcfce7;color:#16a34a;font-size:14px;font-weight:bold;padding:6px 14px;border-radius:20px;">
+                    {{MATCH_SCORE}}% Match
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Opportunity card -->
+          <tr>
+            <td style="padding:16px 28px 0 28px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;">
+                <tr>
+                  <td style="padding:18px 20px;">
+                    <p style="margin:0;font-size:13px;color:#6b7280;">{{ORGANIZATION}} &middot; {{OPPORTUNITY_TYPE}}</p>
+                    <p style="margin:4px 0 12px 0;font-size:17px;font-weight:bold;color:#111827;">{{OPPORTUNITY_TITLE}}</p>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      {{LOCATION_ROW}}
+                      {{DEADLINE_ROW}}
+                      {{STIPEND_ROW}}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Description -->
+          <tr>
+            <td style="padding:16px 28px 0 28px;">
+              <p style="margin:0;font-size:13px;color:#4b5563;line-height:1.5;">{{DESCRIPTION}}</p>
+            </td>
+          </tr>
+
+          <!-- Skills -->
+          <tr>
+            <td style="padding:18px 28px 0 28px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="50%" valign="top" style="padding-right:8px;">
+                    <p style="margin:0 0 6px 0;font-size:11px;font-weight:bold;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">Matched Skills</p>
+                    {{MATCHED_SKILLS_HTML}}
+                  </td>
+                  <td width="50%" valign="top" style="padding-left:8px;">
+                    <p style="margin:0 0 6px 0;font-size:11px;font-weight:bold;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">Missing Skills</p>
+                    {{MISSING_SKILLS_HTML}}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Buttons -->
+          <tr>
+            <td style="padding:26px 28px 8px 28px;">
+              {{APPLY_BUTTON}}{{VIEW_BUTTON}}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 28px 28px 28px;border-top:1px solid #f3f4f6;margin-top:20px;">
+              <p style="margin:16px 0 0 0;font-size:11px;color:#9ca3af;line-height:1.5;">
+                You're receiving this because email notifications are enabled on your
+                Opportunity Matcher account. You can turn these off any time from your
+                profile settings.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
