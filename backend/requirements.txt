@@ -1,0 +1,43 @@
+# Core framework
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+email-validator  # required for pydantic's EmailStr (used by UserRegister)
+
+# Authentication
+# bcrypt is pinned <4.0 — passlib 1.7.4's backend-detection code breaks
+# against bcrypt>=4.0 (it reads bcrypt.__about__.__version__, removed in
+# 4.0), causing every hash/verify call to fail with a bogus "password
+# cannot be longer than 72 bytes" error from passlib's own internal
+# self-test. This is the standard fix until passlib releases a fix.
+passlib[bcrypt]
+bcrypt==3.2.2
+python-jose[cryptography]
+python-multipart
+
+# Rate limiting — protects /login, /register from brute force/spam
+slowapi
+
+# ML matching (existing)
+scikit-learn
+
+# HTTP client (existing + used by scrapers)
+httpx
+
+# HTML parsing — Phase 2 (for future HTML-based scrapers)
+beautifulsoup4
+lxml
+
+# Database — Phase 1
+sqlalchemy
+aiosqlite
+
+# Optional (keep if installed)
+# motor
+# pymongo
+# spacy
+
+# Scheduler — Phase 3
+apscheduler
+pytz
