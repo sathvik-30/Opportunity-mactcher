@@ -5,13 +5,13 @@ UNCHANGED: StudentInput model, /match endpoint, TF-IDF matching logic.
 Response format is byte-for-byte identical.
 """
 
+
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Optional
 
-from app.services.matcher import match_student_to_opportunities
 from app.database.connection import SessionLocal
 from app.database.models import OpportunityTable
+from app.services.matcher import match_student_to_opportunities
 
 router = APIRouter()
 
@@ -21,8 +21,8 @@ class StudentInput(BaseModel):
     name:   str
     branch: str
     year:   int
-    skills: List[str]
-    cgpa:   Optional[float] = None
+    skills: list[str]
+    cgpa:   float | None = None
 
 
 def load_opportunities() -> list:

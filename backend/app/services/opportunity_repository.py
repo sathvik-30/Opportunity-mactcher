@@ -20,8 +20,8 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import SessionLocal
 from app.database.models import OpportunityTable
-from app.services.opportunity_validator import validate, ValidationResult
 from app.services.deduplicator import compute_content_hash, is_duplicate, normalize_url
+from app.services.opportunity_validator import ValidationResult, validate
 
 logger = logging.getLogger(__name__)
 

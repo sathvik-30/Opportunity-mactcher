@@ -20,12 +20,13 @@ Endpoints:
 """
 
 import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
-from app.database.models import SavedOpportunityTable, OpportunityTable, UserTable
+from app.database.models import OpportunityTable, SavedOpportunityTable, UserTable
 from app.services.auth import get_current_user
 
 router = APIRouter()

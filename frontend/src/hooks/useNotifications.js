@@ -41,7 +41,7 @@ export function useNotifications() {
   }, [])
 
   useEffect(() => {
-    fetchNotifications()
+    (async () => { await fetchNotifications() })()
   }, [fetchNotifications])
 
   const markAsRead = useCallback(async (id) => {

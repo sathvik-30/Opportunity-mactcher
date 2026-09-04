@@ -30,13 +30,17 @@ Routes:
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, func
 
 from app.database.connection import SessionLocal, get_db
 from app.database.models import (
-    ScraperLogTable, OpportunityTable, UserTable, SavedOpportunityTable,
-    NotificationTable, EmailHistoryTable,
+    EmailHistoryTable,
+    NotificationTable,
+    OpportunityTable,
+    SavedOpportunityTable,
+    ScraperLogTable,
+    UserTable,
 )
 from app.services.auth import require_admin
 
@@ -173,11 +177,11 @@ def get_admin_stats(db=Depends(get_db), _admin: UserTable = Depends(require_admi
     """
     total_users = db.query(func.count(UserTable.id)).scalar() or 0
 
-    engaged_user_ids = set(
+    engaged_user_ids = {
         r[0] for r in db.query(SavedOpportunityTable.user_id).distinct().all()
-    ) | set(
+    } | {
         r[0] for r in db.query(NotificationTable.user_id).distinct().all()
-    )
+    }
 
     total_opps  = db.query(func.count(OpportunityTable.id)).scalar() or 0
     active_opps = db.query(func.count(OpportunityTable.id)).filter(OpportunityTable.is_active == 1).scalar() or 0

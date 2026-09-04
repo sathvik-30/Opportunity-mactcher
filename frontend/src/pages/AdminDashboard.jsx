@@ -118,7 +118,10 @@ export default function AdminDashboard() {
     }
   }, [userPage])
 
-  useEffect(() => { fetchAll(userPage) }, [userPage])
+  useEffect(() => {
+    (async () => { await fetchAll(userPage) })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userPage])
 
   // Auto-refresh every 45s (per Phase 8 "30-60s" guidance) — not aggressive polling.
   useEffect(() => {

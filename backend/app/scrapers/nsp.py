@@ -279,8 +279,8 @@ if __name__ == "__main__":
       4. Insert into SQLite (deduplicating)
       5. Print a summary
     """
-    import sys
     import os
+    import sys
     import time
 
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../.."))
@@ -292,8 +292,8 @@ if __name__ == "__main__":
 
     print("=" * 48)
     print("  Opportunity Scraper")
-    print(f"  Source: NSP (scholarships.gov.in)")
-    print(f"  URL: /All-Scholarships")
+    print("  Source: NSP (scholarships.gov.in)")
+    print("  URL: /All-Scholarships")
     print("=" * 48)
 
     start = time.time()
@@ -301,8 +301,8 @@ if __name__ == "__main__":
     scraper = NSPScraper()
     run_result = scraper.run()
 
-    from app.services.opportunity_repository import save_opportunities
     from app.database.migrations import run_migrations
+    from app.services.opportunity_repository import save_opportunities
 
     print("  Initializing database...")
     run_migrations()

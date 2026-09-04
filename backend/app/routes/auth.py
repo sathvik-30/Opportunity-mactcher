@@ -5,21 +5,22 @@ API CONTRACT: IDENTICAL — same request/response shapes, same status codes.
 Frontend sees zero difference.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.orm import Session
 import uuid
 
-from app.models.user import UserRegister, UserLogin
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
+
 from app.database.connection import get_db
+from app.models.user import UserLogin, UserRegister
 from app.rate_limit import limiter
 from app.services.auth import (
-    hash_password,
-    verify_password,
     create_token,
-    get_user_by_email,
     create_user,
-    user_to_dict,
     get_current_user,
+    get_user_by_email,
+    hash_password,
+    user_to_dict,
+    verify_password,
 )
 
 router = APIRouter()

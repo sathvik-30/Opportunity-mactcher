@@ -33,7 +33,6 @@ export default function Dashboard({ student: initialStudent, onLogout }) {
   const [editForm, setEditForm]       = useState(null)
   const [saving, setSaving]           = useState(false)
   const [chatOpen, setChatOpen]       = useState(false)
-  const [liveCount, setLiveCount]     = useState(0)
   const [emailPrefSaving, setEmailPrefSaving] = useState(false)
 
   const { saved, toggle: toggleSave, isSaved } = useSaved()
@@ -51,7 +50,7 @@ export default function Dashboard({ student: initialStudent, onLogout }) {
       })
       setResults(res.data.results || [])
       setLastUpdated(new Date())
-    } catch (err) {
+    } catch {
       setFetchError("Could not load matches. Make sure the backend is running on port 8000.")
     } finally {
       setLoading(false)
@@ -59,7 +58,10 @@ export default function Dashboard({ student: initialStudent, onLogout }) {
     }
   }, [student])
 
-  useEffect(() => { fetchMatches(student) }, [])
+  useEffect(() => {
+    (async () => { await fetchMatches(student) })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   useEffect(() => {
     const id = setInterval(() => fetchMatches(student, true), 30000)
     return () => clearInterval(id)

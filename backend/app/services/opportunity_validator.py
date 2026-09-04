@@ -9,7 +9,7 @@ Missing optional fields become None or [].
 
 import logging
 import re
-from datetime import datetime, date
+from datetime import datetime
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -121,8 +121,8 @@ def _normalize_date(raw_date: str | None) -> str | None:
         try:
             dt = datetime.fromtimestamp(int(raw))
             return dt.strftime("%Y-%m-%d")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Could not parse unix timestamp {raw!r}: {e}")
 
     logger.debug(f"Could not parse date: {raw!r}")
     return None

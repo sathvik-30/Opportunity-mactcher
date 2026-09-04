@@ -50,7 +50,6 @@ def _skills_component(student: dict, opportunity: dict):
     """Returns (score 0-100, matched_skills, missing_skills)."""
     required = opportunity.get("required_skills") or []
     student_skills = student.get("skills") or []
-    required_lower = [s.lower() for s in required]
     student_lower = [s.lower() for s in student_skills]
 
     if not required:
@@ -171,9 +170,9 @@ def evaluate_match(student: dict, opportunity: dict) -> dict:
     branch_score, branch_ok, branch_note = _branch_component(student, opportunity)
     year_score, year_ok, year_note = _year_component(student, opportunity)
     cgpa_score, cgpa_ok, cgpa_note = _cgpa_component(student, opportunity)
-    role_score, role_note = _role_component(student, opportunity)
-    location_score, location_note = _location_component(student, opportunity)
-    remote_score, remote_note = _remote_component(student, opportunity)
+    role_score, _role_note = _role_component(student, opportunity)
+    location_score, _location_note = _location_component(student, opportunity)
+    remote_score, _remote_note = _remote_component(student, opportunity)
 
     total = (
         skills_score * WEIGHTS["skills"]

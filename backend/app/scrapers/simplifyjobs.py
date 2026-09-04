@@ -211,8 +211,8 @@ if __name__ == "__main__":
       4. Insert into SQLite (deduplicating)
       5. Print a summary
     """
-    import sys
     import os
+    import sys
 
     # Ensure the backend/ folder is in the Python path
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../.."))
@@ -225,8 +225,8 @@ if __name__ == "__main__":
 
     print("=" * 48)
     print("  Opportunity Scraper")
-    print(f"  Source: SimplifyJobs (GitHub)")
-    print(f"  URL: Summer2025-Internships listings.json")
+    print("  Source: SimplifyJobs (GitHub)")
+    print("  URL: Summer2025-Internships listings.json")
     print("=" * 48)
 
     start = time.time()
@@ -236,8 +236,8 @@ if __name__ == "__main__":
     run_result = scraper.run()
 
     # Persist via repository
-    from app.services.opportunity_repository import save_opportunities
     from app.database.migrations import run_migrations
+    from app.services.opportunity_repository import save_opportunities
 
     print("  Initializing database...")
     run_migrations()

@@ -23,13 +23,13 @@ from email.mime.text import MIMEText
 
 from app.config import (
     EMAIL_ENABLED,
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USERNAME,
-    SMTP_PASSWORD,
     SMTP_FROM_EMAIL,
     SMTP_FROM_NAME,
+    SMTP_HOST,
+    SMTP_PASSWORD,
+    SMTP_PORT,
     SMTP_USE_TLS,
+    SMTP_USERNAME,
 )
 
 logger = logging.getLogger(__name__)
@@ -100,8 +100,8 @@ def send_email(recipient: str, subject: str, html_body: str) -> dict:
         if server is not None:
             try:
                 server.quit()
-            except Exception:
-                pass  # connection may already be closed/broken — never let cleanup raise
+            except Exception as e:
+                logger.debug(f"SMTP quit() during cleanup ignored: {type(e).__name__}")
 
 
 # ── CLI test command (Step 24) ──────────────────────────────────────

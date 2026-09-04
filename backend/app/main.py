@@ -11,26 +11,26 @@ All existing routes, middleware, and cache logic unchanged.
 ─────────────────────────────────────────────────────────────────
 """
 
+import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+
+from app.config import CACHE_MINUTES, FRONTEND_URL
 from app.rate_limit import limiter
-from app.routes.matching import router as match_router
-from app.routes.auth import router as auth_router
 from app.routes.admin import router as admin_router
-from app.routes.saved import router as saved_router
-from app.routes.notifications import router as notifications_router
-from app.routes.users import router as users_router
+from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
-from app.services.scraper import fetch_real_opportunities, load_local_opportunities
-from app.config import FRONTEND_URL, CACHE_MINUTES
-from dotenv import load_dotenv
-import logging
-import os
-from datetime import datetime, timedelta
+from app.routes.matching import router as match_router
+from app.routes.notifications import router as notifications_router
+from app.routes.saved import router as saved_router
+from app.routes.users import router as users_router
 
 load_dotenv()
 

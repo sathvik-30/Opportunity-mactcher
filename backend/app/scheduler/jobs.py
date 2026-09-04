@@ -19,20 +19,20 @@ One scraper failing never stops the others.
 """
 
 import logging
-import uuid
 import time
-from datetime import datetime, timezone, date
+import uuid
+from datetime import date, datetime, timezone
 
 from app.database.connection import SessionLocal
-from app.database.models import ScraperLogTable, OpportunityTable
+from app.database.models import OpportunityTable, ScraperLogTable
 
 logger = logging.getLogger(__name__)
 
 # ── Scraper Registry ──────────────────────────────────────────────
 # To add a new scraper in Phase 4, import it and append to this list.
 # Scheduler logic does NOT need to change.
-from app.scrapers.simplifyjobs import SimplifyJobsScraper
 from app.scrapers.nsp import NSPScraper
+from app.scrapers.simplifyjobs import SimplifyJobsScraper
 
 # NOTE — Devfolio was evaluated for Phase 4 and found NOT SUITABLE
 # for automated collection (client-side-rendered SPA with no public

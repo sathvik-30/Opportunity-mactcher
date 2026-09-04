@@ -19,10 +19,10 @@ async def fetch_real_opportunities() -> list:
     main.py needs zero changes.
     """
     try:
-        from app.scrapers.simplifyjobs import SimplifyJobsScraper
-        from app.services.opportunity_repository import save_opportunities
         from app.database.connection import SessionLocal
         from app.database.models import OpportunityTable
+        from app.scrapers.simplifyjobs import SimplifyJobsScraper
+        from app.services.opportunity_repository import save_opportunities
 
         logger.info("[scraper] Running SimplifyJobs scraper...")
         scraper = SimplifyJobsScraper()

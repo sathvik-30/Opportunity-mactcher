@@ -35,23 +35,23 @@ itself.
 """
 
 import json
-import uuid
-import time
 import logging
+import time
+import uuid
 from datetime import datetime, timezone
 
-from app.database.connection import SessionLocal
-from app.database.models import UserTable, NotificationTable, EmailHistoryTable
-from app.services.match_engine import evaluate_match
-from app.services.email_service import send_email
-from app.services.email_templates import generate_opportunity_email
 from app.config import (
-    MATCH_THRESHOLD,
     EMAIL_BATCH_SIZE,
     EMAIL_DELAY_SECONDS,
     EMAIL_MAX_RETRIES,
     FRONTEND_URL,
+    MATCH_THRESHOLD,
 )
+from app.database.connection import SessionLocal
+from app.database.models import EmailHistoryTable, NotificationTable, UserTable
+from app.services.email_service import send_email
+from app.services.email_templates import generate_opportunity_email
+from app.services.match_engine import evaluate_match
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +349,7 @@ def _match_one_opportunity(db, students: list, opportunity: dict, threshold: int
     return summary
 
 
-def match_new_opportunities(opportunities: list[dict], threshold: int = None) -> list[dict]:
+def match_new_opportunities(opportunities: list[dict], threshold: int | None = None) -> list[dict]:
     """
     PREFERRED entry point for anything processing more than one
     opportunity (i.e. every real scrape run). Evaluates the whole batch
@@ -399,7 +399,7 @@ def match_new_opportunities(opportunities: list[dict], threshold: int = None) ->
         db.close()
 
 
-def match_new_opportunity(opportunity: dict, threshold: int = None) -> dict:
+def match_new_opportunity(opportunity: dict, threshold: int | None = None) -> dict:
     """
     Single-opportunity form of match_new_opportunities() — kept for
     callers evaluating just one opportunity (e.g. tests). Prefer

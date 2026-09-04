@@ -9,13 +9,15 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
 function App() {
   const [page, setPage] = useState("login")
   const [student, setStudent] = useState(null)
-  const [restoring, setRestoring] = useState(true)
+  // No stored token means there's nothing to restore — start non-restoring
+  // immediately rather than flipping the flag from inside the effect.
+  const [restoring, setRestoring] = useState(() => !!localStorage.getItem("token"))
 
   // On load, a valid stored token should restore the session instead of
   // forcing a re-login on every page refresh.
   useEffect(() => {
     const token = localStorage.getItem("token")
-    if (!token) { setRestoring(false); return }
+    if (!token) return
     axios.get(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => setStudent(res.data.user))
       .catch(() => localStorage.removeItem("token")) // expired/invalid — fall back to login

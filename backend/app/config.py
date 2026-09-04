@@ -3,6 +3,7 @@ config.py — Central configuration. All env vars read here.
 Phase 3 additions: scheduler settings appended. Nothing removed.
 """
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()

@@ -8,13 +8,14 @@ decode_token (no second JWT implementation) and is the single source
 of "who is logged in" for any route that needs it.
 """
 
-from passlib.context import CryptContext
-from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
-from fastapi import Header, HTTPException, Depends
+
+from fastapi import Depends, Header, HTTPException
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRE_HOURS
+from app.config import JWT_ALGORITHM, JWT_EXPIRE_HOURS, JWT_SECRET
 from app.database.connection import get_db
 
 # Password hashing — UNCHANGED
@@ -46,6 +47,7 @@ def get_user_by_email(db: Session, email: str):
 def create_user(db: Session, user_data: dict):
     """REPLACES: users_db[email] = {...} — now inserts into SQLite."""
     import json
+
     from app.database.models import UserTable
 
     skills = user_data.get("skills", [])

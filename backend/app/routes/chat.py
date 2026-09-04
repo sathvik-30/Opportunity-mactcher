@@ -12,7 +12,6 @@ how every other user-facing route in the app is protected.
 """
 
 import logging
-from typing import List, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -38,15 +37,15 @@ class OpportunitySummary(BaseModel):
     title: str
     organization: str
     type: str
-    required_skills: List[str] = []
+    required_skills: list[str] = []
 
 
 class AdvisorChatRequest(BaseModel):
-    messages: List[ChatMessage]
-    opportunities: List[OpportunitySummary] = []
+    messages: list[ChatMessage]
+    opportunities: list[OpportunitySummary] = []
 
 
-def _build_system_prompt(student: UserTable, opportunities: List[OpportunitySummary]) -> str:
+def _build_system_prompt(student: UserTable, opportunities: list[OpportunitySummary]) -> str:
     """Same prompt shape the frontend used to build client-side — behavior-preserving."""
     import json
 

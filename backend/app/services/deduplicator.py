@@ -16,6 +16,7 @@ import re
 from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy.orm import Session
+
 from app.database.models import OpportunityTable
 
 logger = logging.getLogger(__name__)

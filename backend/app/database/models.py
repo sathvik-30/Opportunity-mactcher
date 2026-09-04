@@ -6,12 +6,21 @@ Pydantic models  = API request/response shapes (unchanged)
 SQLAlchemy models = real database table structure (new)
 """
 
+from datetime import datetime, timezone
+
 from sqlalchemy import (
-    Column, String, Integer, Float, Text,
-    DateTime, ForeignKey, Index, UniqueConstraint
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+
 from app.database.connection import Base
 
 

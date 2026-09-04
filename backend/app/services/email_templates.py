@@ -50,7 +50,7 @@ def _valid_http_url(url) -> str | None:
     if not url or not isinstance(url, str):
         return None
     url = url.strip()
-    if url.startswith("http://") or url.startswith("https://"):
+    if url.startswith(("http://", "https://")):
         return url
     return None
 

@@ -63,7 +63,7 @@ export function useSaved() {
       if (!headers || migrating.current) return
       if (localStorage.getItem(MIGRATION_FLAG_KEY)) return
 
-      let legacy = []
+      let legacy
       try {
         legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || "[]")
       } catch {

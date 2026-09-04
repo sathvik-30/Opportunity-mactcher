@@ -12,10 +12,10 @@ request body. A user can only ever update their own row.
 """
 
 import json
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.database.models import UserTable
@@ -26,13 +26,13 @@ router = APIRouter()
 
 class PreferencesUpdate(BaseModel):
     """All fields optional — only what's sent gets updated (PATCH semantics)."""
-    email_notifications: Optional[bool] = None
-    notify_internship:   Optional[bool] = None
-    notify_job:          Optional[bool] = None
-    notify_hackathon:    Optional[bool] = None
-    notify_scholarship:  Optional[bool] = None
-    notify_research:     Optional[bool] = None
-    notify_remote_only:  Optional[bool] = None
+    email_notifications: bool | None = None
+    notify_internship:   bool | None = None
+    notify_job:          bool | None = None
+    notify_hackathon:    bool | None = None
+    notify_scholarship:  bool | None = None
+    notify_research:     bool | None = None
+    notify_remote_only:  bool | None = None
 
 
 @router.patch("/users/preferences")
@@ -60,11 +60,11 @@ def update_preferences(
 
 class ProfileUpdate(BaseModel):
     """All fields optional — only what's sent gets updated (PATCH semantics)."""
-    name:   Optional[str] = None
-    branch: Optional[str] = None
-    year:   Optional[int] = None
-    cgpa:   Optional[float] = None
-    skills: Optional[List[str]] = None
+    name:   str | None = None
+    branch: str | None = None
+    year:   int | None = None
+    cgpa:   float | None = None
+    skills: list[str] | None = None
 
 
 @router.patch("/users/profile")

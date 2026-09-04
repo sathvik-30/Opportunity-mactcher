@@ -1,5 +1,6 @@
+
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+
 
 class UserRegister(BaseModel):
     name: str
@@ -10,7 +11,7 @@ class UserRegister(BaseModel):
     branch: str
     year: int
     skills: str        # comma separated
-    cgpa: Optional[float] = None
+    cgpa: float | None = None
 
 class UserLogin(BaseModel):
     email: str
@@ -23,4 +24,4 @@ class UserOut(BaseModel):
     branch: str
     year: int
     skills: list
-    cgpa: Optional[float] = None
+    cgpa: float | None = None

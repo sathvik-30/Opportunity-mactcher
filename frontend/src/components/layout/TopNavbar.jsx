@@ -37,7 +37,7 @@ function NotificationMenu({ open, onClose, notifications, onMarkAllRead, onNotif
         </div>
       )}
       {notifications.map((n) => (
-        <div key={n.id} onClick={() => onNotifClick(n)} style={{
+        <div key={n.id} onClick={() => { onNotifClick(n); onClose() }} style={{
           padding:"12px 16px",display:"flex",gap:12,alignItems:"flex-start",
           borderBottom:"1px solid var(--gray-50)",
           background: !n.is_read ? "var(--blue-light)" : "white",

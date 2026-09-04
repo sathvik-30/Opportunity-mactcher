@@ -4,7 +4,7 @@ SQLAlchemy engine, session factory, Base class, and get_db dependency.
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.config import DATABASE_URL

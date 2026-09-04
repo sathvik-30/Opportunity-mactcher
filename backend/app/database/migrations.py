@@ -4,14 +4,15 @@ Creates all tables on startup and seeds sample_opportunities.json into DB.
 Safe to call multiple times — idempotent.
 """
 
-import json
-import uuid
 import hashlib
+import json
 import os
+import uuid
 from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
-from app.database.connection import engine, SessionLocal
+from app.database.connection import SessionLocal, engine
 from app.database.models import Base, OpportunityTable
 from app.services.deduplicator import normalize_url
 
