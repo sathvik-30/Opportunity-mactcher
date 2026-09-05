@@ -33,6 +33,9 @@ lxml
 sqlalchemy
 aiosqlite
 
+# Postgres driver — required for DATABASE_URL="postgresql://..." (Neon/Vercel)
+psycopg2-binary
+
 # Optional (keep if installed)
 # motor
 # pymongo

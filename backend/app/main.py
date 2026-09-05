@@ -98,11 +98,12 @@ app.add_middleware(
 
 
 @app.get("/")
+@app.get("/api")
 def health_check():
     return {"status": "running", "message": "Opportunity Matcher API", "version": "2.0"}
 
 
-@app.get("/opportunities")
+@app.get("/api/opportunities")
 async def get_opportunities(refresh: bool = False):
     """
     Returns all active opportunities from SQLite.
@@ -144,10 +145,10 @@ async def get_opportunities(refresh: bool = False):
     }
 
 
-app.include_router(auth_router)
-app.include_router(match_router)
-app.include_router(admin_router)
-app.include_router(saved_router)
-app.include_router(notifications_router)
-app.include_router(users_router)
-app.include_router(chat_router)
+app.include_router(auth_router, prefix="/api")
+app.include_router(match_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(saved_router, prefix="/api")
+app.include_router(notifications_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
+app.include_router(chat_router, prefix="/api")
