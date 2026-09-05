@@ -1,378 +1,196 @@
-# 🎯 OpportunityMatch
+# OpportunityMatch
 
-A full-stack app that matches students to internships, hackathons, scholarships and research programs based on their skills and profile.
+OpportunityMatch is a full-stack web app that matches college students to internships, jobs, hackathons, scholarships, and research programs based on their skills, branch, year, and CGPA. Opportunities are scraped automatically from external sources, scored against each student's profile with a TF-IDF matching engine, and surfaced through a dashboard with filtering, saved listings, notifications, and an AI career advisor chatbot.
+
+It's built for students who want a single place to see which live opportunities they actually qualify for, ranked by relevance, instead of manually cross-checking eligibility criteria across many sites.
+
+## Features
+
+- **Authentication** — email/password registration and login with JWT sessions (24-hour expiry), rate-limited (5 requests/minute) against brute-force and spam, plus session restoration on page refresh via `GET /me`.
+- **Skill-based matching engine** — TF-IDF + cosine similarity between a student's skills and each opportunity's required skills, producing a 0–100 match score per opportunity.
+- **Eligibility checking** — automatic pass/fail checks against each opportunity's minimum year, allowed branches, and minimum CGPA, shown alongside the match score.
+- **Editable profile with instant re-matching** — updating name, branch, year, CGPA, or skills persists to the database and recomputes matches immediately.
+- **Saved opportunities** — save/unsave any opportunity for later; persisted per-user in the database.
+- **Notifications** — students are notified when a newly scraped opportunity crosses their match-score threshold; notifications can be listed, marked read (individually or all at once), or deleted.
+- **Automatic background scraping** — a scheduler (APScheduler) periodically runs scrapers against external sources (currently the National Scholarship Portal and SimplifyJobs' internship/new-grad listings) and deduplicates results by normalized URL and content hash.
+- **AI career advisor chatbot** — a chat interface backed by Groq (`openai/gpt-oss-20b`), proxied entirely through the backend so the API key never reaches the browser; can discuss listed opportunities and help draft cover letters.
+- **Email notifications** — optional SMTP-based email alerts for new matches (disabled by default; the app only logs what it would send until `EMAIL_ENABLED=true` is set).
+- **Filtering and sorting** — filter opportunities by type, and sort by match score, deadline, or newest.
+- **Admin dashboard** — a separate, admin-only set of endpoints for system statistics, paginated user/opportunity/scraper/notification/email views, and manually triggering a scrape.
 
 ## Tech Stack
-- **Backend:** FastAPI, Python, scikit-learn
-- **Frontend:** React + Vite
-- **Matching:** TF-IDF Cosine Similarity
-- **AI Chatbot:** Groq API (openai/gpt-oss-20b), proxied through the backend — see Recent Changes
 
-## Setup
+### Backend
+- **FastAPI** (0.141.1) — web framework
+- **Uvicorn** — ASGI server
+- **Pydantic** (2.13.4) — request/response validation
+- **SQLAlchemy** (2.0.52) — ORM
+- **SQLite** (via `aiosqlite`) — database
+- **passlib + bcrypt** (pinned `bcrypt==3.2.2` for passlib 1.7.4 compatibility) — password hashing
+- **python-jose** — JWT signing/verification
+- **slowapi** — rate limiting on `/login` and `/register`
+- **scikit-learn** — TF-IDF vectorization and cosine similarity for matching
+- **httpx** — outbound HTTP (scrapers, Groq proxy)
+- **BeautifulSoup4 + lxml** — HTML parsing for scrapers
+- **APScheduler** — scheduled background scraping jobs
 
-### 1. Get a free Groq API key
-Go to https://console.groq.com → API Keys → Create Key
+Exact versions aren't pinned in `requirements.txt` (except `bcrypt`); the versions above are what's currently installed in this project's virtual environment.
 
-### 2. Backend setup
+### Frontend
+- **React** (^19.2.6)
+- **Vite** (^8.0.12) — dev server and build tool
+- **Axios** (^1.17.0) — HTTP client
+- **ESLint** (^10.3.0) — linting
+
+## Architecture
+
+The frontend (React, served by Vite on port 5173 in development) talks to the backend (FastAPI, served by Uvicorn on port 8000) entirely over HTTP/JSON via `axios`/`fetch`, using the base URL from `VITE_API_URL`. The backend is stateless per-request; identity comes from a JWT bearer token issued at login/register and validated on every protected route — the API never trusts a user ID supplied in a request body. The backend also proxies the AI advisor's calls to Groq's API so no third-party key is ever exposed to the browser.
+
+The backend reads from and writes to a single SQLite database file (`backend/data/opportunity_matcher.db`) through SQLAlchemy. A background scheduler process, running inside the same FastAPI process, periodically scrapes external opportunity sources, deduplicates and inserts new listings into that same database, and triggers notification records for matching students — no separate worker process or message queue is involved.
+
 ```
+opportunity-matcher/
+├── backend/
+│   ├── app/
+│   │   ├── main.py            # FastAPI app, lifespan, CORS, route registration
+│   │   ├── config.py          # all environment variables read here
+│   │   ├── database/          # SQLAlchemy engine, ORM models, migrations
+│   │   ├── models/             # Pydantic request/response schemas
+│   │   ├── routes/            # auth, matching, users, saved, notifications, admin, chat
+│   │   ├── services/           # auth, matching engine, notifications, email, scraping helpers
+│   │   ├── scrapers/           # per-source scrapers (NSP, SimplifyJobs)
+│   │   ├── scheduler/          # APScheduler job definitions and runner
+│   │   └── templates/email/    # HTML email templates
+│   ├── data/                   # SQLite DB file + seed data
+│   └── requirements.txt
+└── frontend/
+    └── src/
+        ├── pages/               # Login, Register, Dashboard, AdminDashboard
+        ├── components/          # cards, filters, layout, common UI
+        ├── hooks/                # useSaved, useNotifications
+        └── utils/
+```
+
+## Getting Started
+
+### Prerequisites
+- Python 3.10+ (developed against 3.14)
+- Node.js 18+ (developed against 24)
+
+### Clone the repo
+
+```bash
+git clone <repository-url>
+cd opportunity-matcher
+```
+
+### Backend setup
+
+```bash
 cd backend
+python -m venv venv
+venv\Scripts\activate      # Windows
+# source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
-Add to backend/.env:
-```
-GROQ_API_KEY=your_key_here
-JWT_SECRET=some-long-random-string
-```
-`JWT_SECRET` is required — the app now refuses to start without it (see Recent Changes below; there is no insecure default).
-The Groq key is used server-side only (`/chat/advisor`) — it does **not** go in the frontend.
-Run:
-```
+
+Create `backend/.env` with the following variables:
+
+| Variable | Description |
+|---|---|
+| `JWT_SECRET` | **Required.** Secret used to sign JWTs; the app refuses to start without it. Use a long random string. |
+| `GROQ_API_KEY` | Groq API key for the AI advisor chatbot (`/chat/advisor`). Get one at console.groq.com. Optional — that route returns 503 without it. |
+| `DATABASE_URL` | SQLAlchemy database URL. Defaults to `sqlite:///./data/opportunity_matcher.db` if unset. |
+| `FRONTEND_URL` | The frontend's origin, used for CORS and links in emails. Defaults to `http://localhost:5173`. |
+| `SCHEDULER_ENABLED` | Set to `false` to disable background scraping entirely. Defaults to `true`. |
+| `SCRAPER_INTERVAL_HOURS` | Hours between scrape runs. Defaults to `6`. |
+| `SCRAPER_INTERVAL_MINUTES` | If set, overrides `SCRAPER_INTERVAL_HOURS` (useful for testing, e.g. `5`). |
+| `RUN_SCRAPER_ON_STARTUP` | Set to `true` to run scrapers once immediately on startup. Defaults to `false`. |
+| `APP_TIMEZONE` | Timezone for scheduled jobs. Defaults to `Asia/Kolkata`. |
+| `MATCH_THRESHOLD` | Minimum match score (0–100) required before a student is notified of a new opportunity. Defaults to `70`. |
+| `EMAIL_ENABLED` | Set to `true` to actually send emails via SMTP. Defaults to `false` (logs only). |
+| `SMTP_HOST` | SMTP server hostname. Required if `EMAIL_ENABLED=true`. |
+| `SMTP_PORT` | SMTP server port. Defaults to `587`. |
+| `SMTP_USERNAME` | SMTP auth username. |
+| `SMTP_PASSWORD` | SMTP auth password. |
+| `SMTP_FROM_EMAIL` | "From" address for outgoing emails. |
+| `SMTP_FROM_NAME` | "From" display name. Defaults to `Opportunity Matcher`. |
+| `SMTP_USE_TLS` | Whether to use TLS for SMTP. Defaults to `true`. |
+| `EMAIL_BATCH_SIZE` | Max emails per notification batch. Defaults to `50`. |
+| `EMAIL_DELAY_SECONDS` | Delay between individual emails sent. Defaults to `1`. |
+| `EMAIL_MAX_RETRIES` | Retry attempts for a failed email send. Defaults to `3`. |
+
+Run the backend:
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-### 3. Frontend setup
-```
+The API is now available at `http://localhost:8000`.
+
+### Frontend setup
+
+```bash
 cd frontend
 npm install
 ```
-Add to frontend/.env:
-```
-VITE_API_URL=http://localhost:8000
-```
-Run:
-```
+
+Create `frontend/.env` with:
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Base URL of the backend API. Defaults to `http://localhost:8000` if unset. |
+
+Run the frontend:
+
+```bash
 npm run dev
 ```
 
-### 4. Open http://localhost:5173
+Open `http://localhost:5173`.
 
-## Features
-- Student login & registration (2-step)
-- TF-IDF skill matching engine
-- Eligibility checker (year, branch, CGPA)
-- Match score progress bar on each card
-- Requirements brief on every opportunity card
-- Edit profile — re-matches instantly
-- AI chatbot powered by Groq (ask about opportunities, get cover letters)
-- Live opportunities fetched every 10 minutes
-- Auto-refresh every 30 seconds
+## API Overview
 
-## Recent Changes
+All paths are relative to the backend's base URL (e.g. `http://localhost:8000`). "Auth" means a valid `Authorization: Bearer <token>` header is required. "Admin" additionally requires `is_admin=1` on the authenticated user.
 
-> **Note on sourcing:** this project is not a git repository (`git status` /
-> `git log` fail — no `.git` directory), so this section was **not** built
-> from `git log`/`git diff`. It was built by re-reading the current,
-> on-disk content of every file listed below immediately before writing
-> this section, cross-referenced against the fixes as they were made and
-> live-tested (real HTTP requests against a running backend, real SQLite
-> queries against the actual `.db` file) earlier in the same session.
-> Line numbers reflect the files' state as of this writing and will drift
-> as the code changes further.
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| GET | `/` | Health check | No |
+| GET | `/opportunities` | List active opportunities (cached, `?refresh=true` to force refresh) | No |
+| POST | `/register` | Create a new student account, returns a JWT | No (rate-limited) |
+| POST | `/login` | Authenticate, returns a JWT | No (rate-limited) |
+| GET | `/me` | Get the current authenticated user's profile | Yes |
+| POST | `/match` | Compute match scores/eligibility for a given student against all opportunities | No |
+| PATCH | `/users/preferences` | Update the current user's notification preferences | Yes |
+| PATCH | `/users/profile` | Update the current user's profile (name, branch, year, cgpa, skills) | Yes |
+| POST | `/saved` | Save an opportunity for the current user | Yes |
+| GET | `/saved` | List the current user's saved opportunities | Yes |
+| DELETE | `/saved/{opportunity_id}` | Unsave an opportunity | Yes |
+| GET | `/notifications` | List the current user's notifications | Yes |
+| PATCH | `/notifications/{id}/read` | Mark one notification as read | Yes |
+| PATCH | `/notifications/read-all` | Mark all of the current user's notifications as read | Yes |
+| DELETE | `/notifications/{id}` | Delete a notification | Yes |
+| POST | `/chat/advisor` | Send a message to the AI career advisor (proxied to Groq) | Yes |
+| GET | `/admin/stats` | Full system statistics | Admin |
+| GET | `/admin/users` | Paginated user list | Admin |
+| GET | `/admin/opportunities` | Paginated, filterable opportunity list | Admin |
+| GET | `/admin/scrapers` | Scraper run logs + per-source health | Admin |
+| GET | `/admin/notifications` | Notification statistics | Admin |
+| GET | `/admin/emails` | Email send statistics + recent failures | Admin |
+| GET | `/admin/scraper-status` | Recent scraper logs (legacy) | Admin |
+| GET | `/admin/scheduler-status` | Live scheduler job status | Admin |
+| POST | `/admin/trigger-scraper` | Manually trigger the scraper pipeline | Admin |
+| GET | `/admin/db-stats` | Quick opportunity/user counts (legacy) | Admin |
 
-### Security Fixes
+## Known Limitations
 
-**JWT_SECRET insecure default.**
-`config.py` used to fall back to the hardcoded string `"your-secret-key-change-this"`
-if `JWT_SECRET` wasn't set in the environment — anyone reading the source could
-forge a valid JWT for any user ID. It now has no fallback and raises
-`RuntimeError` at startup if `JWT_SECRET` isn't set.
-Files: `backend/app/config.py:16-27`.
+- **SQLite** is used for the database. It's fine for local development and small deployments, but a production deployment expecting concurrent writes or horizontal scaling should migrate to Postgres.
+- **No schema migration tool** — `migrations.py` only additively creates tables/columns (`Base.metadata.create_all` + manual column checks); there's no Alembic, so destructive schema changes have no safe upgrade path.
+- **Email sending is synchronous** — notification emails are sent in a blocking loop with a `time.sleep()` throttle rather than via a background task queue; this is an intentional simplicity trade-off, not a bug, but won't scale well to a large user base.
+- **No refresh tokens** — JWTs are valid for 24 hours with no revocation mechanism; logging out only clears the token client-side.
+- **Scrapers are source-specific and fragile** — the National Scholarship Portal and SimplifyJobs scrapers depend on those sites' current HTML/JSON structure and will need maintenance if those sources change.
+- **No automated tests** — a `backend/tests` directory exists but is currently empty, and there's no CI pipeline configured in this repository.
 
-**Groq API key moved from the frontend to a backend proxy route.**
-The AI chatbot used to call `api.groq.com` directly from the browser with
-`VITE_GROQ_API_KEY`, which Vite inlines into the client bundle — visible to
-any visitor via devtools or the built JS. A new backend route,
-`POST /chat/advisor`, now makes that call server-side using
-`config.GROQ_API_KEY`, gated behind a valid JWT so only logged-in users can
-spend the app's Groq quota. The frontend no longer references any Groq key
-at all.
-Files: `backend/app/routes/chat.py` (new, 121 lines), `backend/app/main.py:27,153`
-(router registration), `frontend/src/pages/Dashboard.jsx` (removed the
-`GROQ_KEY` constant and `buildSystem()`; `send()` in the `Chatbot` component
-now calls `POST ${API}/chat/advisor`, lines 461-482).
+## License
 
-**CORS origin hardcoded instead of using existing config.**
-`main.py` hardcoded `allow_origins=["http://localhost:5173"]` even though
-`config.py` already had a configurable `FRONTEND_URL` (used elsewhere for
-email links) — any deployment with a different frontend origin would have
-had every request blocked by CORS. Now reads `FRONTEND_URL` from config.
-Files: `backend/app/main.py:29,92-97`.
-
-**No rate limiting on `/login` or `/register`.**
-Both endpoints were open to unlimited brute-force/credential-stuffing
-attempts. Added `slowapi`-based rate limiting, 5 requests/minute per IP,
-scoped to just these two routes (verified live: 6th rapid request in a
-minute returns `429`; an unrelated route like `/opportunities` is
-unaffected).
-Files: `backend/app/rate_limit.py` (new, shared `Limiter` instance),
-`backend/app/main.py:17-20,88-90` (wiring), `backend/app/routes/auth.py:14,28-30,53-55`
-(`@limiter.limit("5/minute")` on both routes), `backend/requirements.txt:18-19`
-(added `slowapi`).
-
-**No server-side email format or password length validation on `/register`.**
-`UserRegister.email` was plain `str` (any string accepted) and there was no
-minimum password length enforced server-side (the frontend only showed a
-"Min 6 characters" *placeholder hint*, never enforced). Switched `email` to
-`pydantic.EmailStr` and added `password: str = Field(min_length=6)` — 6 to
-match, not contradict, the frontend's existing hint. Required installing
-`email-validator` (pydantic's `EmailStr` dependency). Verified live:
-invalid email → `422`; 5-char password → `422`; 6-char password + valid
-email → `200` (boundary case). This also surfaced a real frontend bug:
-pydantic 422 responses return `detail` as an *array* of error objects, not
-a string, and `Register.jsx` was rendering `detail` directly as a React
-child — which throws for a non-string array. Fixed by normalizing the
-error into a joined string before rendering (see Bug Fixes below).
-Files: `backend/app/models/user.py` (`EmailStr` + `Field(min_length=6)`),
-`backend/requirements.txt:6` (added `email-validator`).
-
-**Email template placeholder injection.**
-`email_templates.py` built each email via a chain of `.replace()` calls,
-each re-scanning the *entire accumulated string* — so an untrusted, scraped
-opportunity title/description that happened to contain literal text like
-`{{APPLY_BUTTON}}` would get silently overwritten by a later `.replace()`
-call, corrupting the email's structure. Fixed by substituting all
-placeholders in a single `re.sub()` pass over the original template, so a
-value that was just inserted is never re-scanned. Verified with both a
-normal-data test and a deliberate injection attempt (scraped fields
-containing literal `{{...}}` tokens now render inert).
-Files: `backend/app/services/email_templates.py:28,37-38,132-156`.
-
-### Bug Fixes
-
-**bcrypt/passlib version incompatibility breaking `/login` and `/register`.**
-`passlib==1.7.4`'s bcrypt backend-detection code reads
-`bcrypt.__about__.__version__`, which was removed in `bcrypt>=4.0` — the
-installed `bcrypt==5.0.0` caused *every* password hash/verify call to fail
-with a nonsensical `"password cannot be longer than 72 bytes"` error
-(thrown by passlib's own internal self-test, unrelated to actual password
-length), returning `500` on both endpoints regardless of credentials.
-Fixed by pinning `bcrypt==3.2.2` (the standard fix for this known
-incompatibility) and reinstalling. Verified live with real credentials:
-register → `200`, login with correct password → `200`, login with wrong
-password → `401` (not `500`).
-Files: `backend/requirements.txt:8-14`. No application code changed.
-
-**No session restoration on page refresh (`App.jsx`).**
-`App.jsx` always started with `student = null` and never checked
-`localStorage` for an existing token on mount — despite `JWT_EXPIRE_HOURS = 24`,
-any page refresh booted the user back to the login screen. Added a new
-`GET /me` backend route and a mount-time check in `App.jsx` that restores
-the session from a stored token. This also exposed a related bug: logout
-never cleared the stored token (harmless before, since a refresh always
-reset state anyway) — now fixed, since a stale token left in `localStorage`
-would otherwise silently re-log the user in after "logging out."
-Files: `backend/app/routes/auth.py:66-73` (new `GET /me`),
-`frontend/src/App.jsx` (rewritten — `restoring` state + restoration
-`useEffect`, `handleLogout` now clears the token).
-
-**Profile edits in `Dashboard.jsx` were never persisted.**
-The "Save & Re-match" button in the Edit Profile modal only updated local
-React state — name/branch/year/CGPA/skills edits were silently lost on
-refresh or logout, since no backend route existed for it (only
-`PATCH /users/preferences` for notification toggles existed). Added
-`PATCH /users/profile` and wired the frontend to call it. Verified live,
-including confirming the change landed in the SQLite file on disk, not
-just the response body.
-Files: `backend/app/routes/users.py:61-104` (new `PATCH /users/profile`),
-`frontend/src/pages/Dashboard.jsx:101-127` (`saveProfile`).
-
-**`matcher.py` always said "nd" for ordinal years.**
-`check_eligibility()` hardcoded `f"Requires {min_year}nd year or above"`,
-producing "Requires 1nd year", "Requires 3nd year", etc. for every value.
-Added a small `_ordinal()` helper and use it instead; verified correct for
-1st/2nd/3rd/4th plus edge cases (11th–13th, 21st–23rd).
-Files: `backend/app/services/matcher.py:4-10,44`.
-
-**`matcher.py` bare `except:`.**
-`compute_match_score()` caught every exception (including e.g.
-`KeyboardInterrupt`) and silently returned `0`, masking unrelated bugs as
-"no match." Narrowed to `except ValueError:` (the actual failure mode,
-confirmed directly — `TfidfVectorizer` raises `ValueError: empty
-vocabulary` when both documents are empty). Verified: the real case (empty
-student skills) still returns `0`; an injected `TypeError` now correctly
-propagates instead of being swallowed.
-Files: `backend/app/services/matcher.py:29`.
-
-**Duplicate `CACHE_MINUTES` constant.**
-Both `config.py` and `main.py` independently defined `CACHE_MINUTES = 10` —
-editing one had no effect on the other. `main.py` now imports it from
-`config.py`.
-Files: `backend/app/main.py:29` (removed local constant, added to the
-existing `config` import).
-
-**Dead sort options in `FilterPanel.jsx` ("Newest", "Salary").**
-Both silently fell back to "Highest Match" — Dashboard's sort function
-never implemented them. "Newest" was genuinely implementable (`created_at`
-already existed on `OpportunityTable`, just wasn't exposed via `to_dict()`)
-and is now wired up. "Salary" was removed instead of faked — `stipend` is
-free-text (`"₹50,000/mo"`, `"Unpaid"`, `None`, arbitrary scraped strings)
-with no structured numeric value, so sorting by it would mean guessing at
-parsing arbitrary formats, which conflicts with this codebase's own
-explicit "never fabricate/guess" convention (see the scrapers and
-`opportunity_validator.py`). Verified against live data with the exact
-frontend comparator.
-Files: `backend/app/database/models.py:171` (`created_at` added to
-`to_dict()`), `frontend/src/components/filters/FilterPanel.jsx:5` ("Salary"
-removed), `frontend/src/pages/Dashboard.jsx:97` ("Newest" implemented).
-
-**Deadline-null sort bug (found while fixing the item above).**
-"Deadline Soon" used `new Date(a.opportunity.deadline)` directly —
-`new Date(null)` evaluates to the Unix epoch (1970), so any opportunity
-with no deadline sorted as "soonest," burying real deadlines. This was a
-real, high-impact bug in practice: of the 222 opportunities in the live DB,
-205 (all SimplifyJobs listings, which don't provide a deadline) had
-`deadline: null`. Fixed to push undated opportunities to the end instead.
-Verified against live data: all 17 dated opportunities now sort first in
-correct ascending order; all 205 undated ones are pushed to the end.
-Files: `frontend/src/pages/Dashboard.jsx:86-96`.
-
-**Deduplicator URL-normalization bug.**
-`find_by_url()` normalized only the *incoming* URL and compared it against
-the *raw, never-normalized* stored `link` column, so two scrapes of the
-same job differing only by a tracking parameter (e.g. `?utm_source=a` vs
-`?utm_source=b`) never matched — every such duplicate silently fell through
-to the content-hash fallback, defeating the documented "primary: URL
-match" design. Fixed by adding a `normalized_link` column (used only for
-dedup matching — kept separate from `link` so the real Apply-button URL is
-never altered) populated at insert time and backfilled for existing rows;
-`find_by_url` now compares both sides after the same normalization. Also
-corrected a misleading docstring: the normalization function actually
-strips *all* query parameters, not just tracking-only ones as previously
-claimed. Verified against the live 222-row database: fresh-startup
-migration log showed `Backfilled normalized_link for 222/222 opportunities`;
-a full `save_opportunity()` pipeline test with a real URL + added tracking
-params correctly returned `"duplicate"` with the same `opportunity_id`
-(only 1 row persisted, not 2).
-Files: `backend/app/database/models.py:118-123,148` (new column + index),
-`backend/app/services/deduplicator.py:33-59,96-118` (`normalize_url` made
-public, `find_by_url` fixed), `backend/app/services/opportunity_repository.py:24,44`
-(computed on insert), `backend/app/database/migrations.py:16,61-63,82-113,199`
-(column migration + `_backfill_normalized_links()`).
-
-**`connection.py` DATABASE_URL duplication** (found while verifying the
-SQLite setup, same class of bug as the `CACHE_MINUTES` duplication above).
-`connection.py` read `DATABASE_URL` from the environment independently of
-`config.py`, via its own `os.getenv` call with a matching default — harmless
-today since both defaults agreed, but a latent risk if they ever drifted.
-Now imports `DATABASE_URL` from `config.py`.
-Files: `backend/app/database/connection.py:1-10`.
-
-**`Sidebar.jsx` mobile/desktop visibility didn't react to window resizing.**
-`window.innerWidth < 1024` was read once during render with no `resize`
-listener, so the sidebar's visibility class was stale until some unrelated
-re-render happened to fire. Fixed by dropping the JS check entirely — the
-component's own CSS media query (`@media (max-width: 1023px)`) already
-scoped the `.sidebar-hidden` class's effect to the same breakpoint, making
-the JS check redundant with it. Confirmed by walking through every
-desktop/mobile × open/closed combination: the CSS-only version produces
-identical results in every case, since the JS check never added any
-behavior the CSS wasn't already providing. Also removed an unrelated dead
-`import { useState }` in the same file (this component has no `useState`
-calls at all), caught by lint while verifying.
-Files: `frontend/src/components/layout/Sidebar.jsx:1,32`.
-
-**`Register.jsx` would crash on a validation error response.**
-Found while verifying the new `EmailStr`/password-length validation above.
-FastAPI/pydantic 422 responses return `detail` as an array of error
-objects, not a string; `Register.jsx` rendered `e.response.data.detail`
-directly as a React child, which throws when it's a non-string array.
-Fixed by normalizing the error into a joined string before storing it in
-state. Verified against a real 422 response carrying two simultaneous
-errors (bad email + short password) — now renders as one readable string
-instead of crashing.
-Files: `frontend/src/pages/Register.jsx:31-38`.
-
-**`notification_service.py` scalability: full `users` table re-scanned once per opportunity.**
-`match_new_opportunity()` ran `db.query(UserTable).all()` fresh for every
-single newly-inserted opportunity — since it fired from inside
-`save_opportunity()`'s per-record insert path, a single scrape run
-inserting up to ~500 opportunities meant up to 500 redundant full-table
-scans of `users` per run, getting more expensive as the user base grows.
-Restructured so the notification pass runs ONCE per scrape *batch*
-instead of once per opportunity: extracted the per-opportunity logic into
-`_match_one_opportunity(db, students, opportunity, threshold)` (takes an
-already-loaded `students` list instead of querying it itself), added
-`match_new_opportunities(opportunities)` as the new preferred batched
-entry point (loads `students` once, evaluates every opportunity in the
-batch against it), and moved the trigger point from
-`opportunity_repository.save_opportunity()` (per-record) to
-`save_opportunities()` (once, after the whole batch is inserted). The
-original single-opportunity `match_new_opportunity()` is kept as a thin
-wrapper around the batched form, for any caller that only has one
-opportunity to evaluate.
-
-This surfaced a second, related issue while verifying the fix: `SessionLocal`
-doesn't set `expire_on_commit` (SQLAlchemy defaults it to `True`), so every
-`db.commit()` inside the loop (once per notification row, once per email-
-history row) was silently expiring every cached `user` object, forcing a
-fresh single-row `SELECT ... WHERE id = ?` on the next attribute access —
-undermining the whole point of loading `students` once. Fixed by opening
-the batched function's session with `SessionLocal(expire_on_commit=False)`,
-scoped to just that one session (the app-wide `SessionLocal` default is
-untouched) — safe here since this code only reads `user` rows and the rows
-it does write use client-generated UUIDs, not server-generated values that
-would need a post-commit refresh.
-
-Verified directly by counting actual SQL statements via a SQLAlchemy
-`before_cursor_execute` hook against the real dev database: a 5-opportunity
-batch dropped from 29 total `SELECT ... FROM users` statements (1 real
-`.all()` scan + 28 commit-triggered single-row refreshes) down to exactly
-1; a 20-opportunity batch also stayed at exactly 1, confirming the fix is
-O(1) in batch size, not O(N). Also verified: notification counts still
-correct (5 notifications for 5 opportunities, 20 for 20), the kept
-single-opportunity `match_new_opportunity()` API still works and notifies
-the right user, and an ineligible user (wrong branch/skills) is still
-correctly *not* notified — the refactor changed only where the `users`
-query happens, not the matching logic itself. Deliberately left unchanged:
-the synchronous, `time.sleep()`-throttled email-sending loop within each
-opportunity's evaluation — that's an existing, explicitly documented
-design decision in this codebase (see the module's own comments), not a
-bug, and addressing it would mean introducing background task
-infrastructure this project has consistently avoided elsewhere.
-Files: `backend/app/services/notification_service.py` (extracted
-`_match_one_opportunity`, new `match_new_opportunities`, `expire_on_commit=False`),
-`backend/app/services/opportunity_repository.py` (`save_opportunity` no
-longer triggers notifications itself and now returns the inserted
-opportunity dict; `save_opportunities` collects inserted opportunities and
-calls `match_new_opportunities` once after the batch completes).
-
-### Database
-
-SQLite was already fully configured before this session — no wiring was
-needed, only verification:
-- `backend/app/database/connection.py` — SQLAlchemy engine, `SessionLocal`
-  session factory, `Base`, `get_db()` FastAPI dependency.
-- `backend/app/database/models.py` — 6 ORM tables (`UserTable`,
-  `OpportunityTable`, `SavedOpportunityTable`, `NotificationTable`,
-  `EmailHistoryTable`, `ScraperLogTable`).
-- `backend/app/database/migrations.py` — `run_migrations()` (called from
-  `main.py`'s FastAPI `lifespan` on every startup) creates tables
-  (`Base.metadata.create_all`, idempotent), additively adds any missing
-  columns, and seeds `data/sample_opportunities.json` only if the table is
-  empty. No Alembic — additive-only schema changes have been sufficient so
-  far.
-- `backend/.env`: `DATABASE_URL=sqlite:///./data/opportunity_matcher.db`,
-  read by `config.py` via `os.getenv` (not hardcoded).
-- The one database-related bug found and fixed this session: the
-  `connection.py` `DATABASE_URL` duplication (see Bug Fixes above), and the
-  `normalized_link` schema addition + migration/backfill (see the
-  deduplicator fix above).
-- Verified end-to-end live against the real file (`backend/data/opportunity_matcher.db`,
-  222 real opportunities from prior scraper runs): register → login →
-  `GET /me` → `GET /opportunities` → `POST /match` → `GET /saved`, all
-  hitting the real database, with several writes (registration,
-  profile updates) confirmed directly via `sqlite3` queries against the
-  file, not just trusting API responses.
-
-### Known Issues / Not Yet Fixed
-
-Everything from the original full-codebase review has now been addressed.
-
-Deliberately left as-is, not a bug: the synchronous, `time.sleep()`-throttled
-email-sending loop inside `notification_service.py`'s per-opportunity
-evaluation (see the scalability fix above) — an explicit, documented design
-decision in this codebase, not something flagged as broken.
-
-Resolved as a side effect of a fix above, not separately: `config.GROQ_API_KEY`
-was previously unused/dead code (the frontend called Groq directly instead)
-— it's now genuinely used by `backend/app/routes/chat.py`.
+No license specified.
